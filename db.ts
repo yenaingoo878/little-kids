@@ -29,18 +29,19 @@ export const generateId = () => {
 
 // --- Initialization Logic ---
 export const initDB = async () => {
-    const profileCount = await db.profile.count();
-    if (profileCount === 0) {
-        const defaultId = generateId(); // UUID အစစ် ရယူခြင်း
-        await db.profile.add({
-            id: defaultId,
-            name: '',
-            dob: '',
-            gender: 'boy',
-            synced: 0
-        });
-    }
-  };
+  const profileCount = await db.profile.count();
+  if (profileCount === 0) {
+      // Create a default profile if none exist
+      const defaultId = generateId(); // Use generated ID instead of hardcoded 'main'
+      await db.profile.add({
+          id: defaultId,
+          name: '',
+          dob: '',
+          gender: 'boy',
+          synced: 0
+      });
+  }
+};
 
 // --- Sync Logic (Bi-directional: IndexedDB <-> Supabase) ---
 export const syncData = async () => {

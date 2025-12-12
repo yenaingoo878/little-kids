@@ -5,12 +5,13 @@ export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current working directory.
   // Fix: Cast process to any as 'cwd' property might be missing on Process type definition in this context
   const env = loadEnv(mode, (process as any).cwd(), '');
-  base: "/little-kids"
+  
 
   return {
     plugins: [
       react()
     ],
+    base: process.env.VITE_BASE_PATH || "/little-kids",
     define: {
       // Polyfill process.env.API_KEY so it is available at runtime
       // Support both API_KEY and GEMINI_API_KEY

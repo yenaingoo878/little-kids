@@ -691,6 +691,18 @@ function App() {
                         
                         <div className="relative"><label className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 absolute top-2 left-3">{t('child_name')}</label><input type="text" value={editingProfile.name} onChange={(e) => setEditingProfile({...editingProfile, name: e.target.value})} className="w-full px-3 pb-2 pt-6 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-800 dark:text-slate-100 font-bold focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors text-base" placeholder="Baby Name" /></div>
                         
+                        {/* Gender Selector */}
+                        <div className="grid grid-cols-2 gap-3 mt-1 mb-1">
+                            <button onClick={() => setEditingProfile({...editingProfile, gender: 'boy'})} className={`py-3 rounded-xl border-2 flex items-center justify-center gap-2 transition-all ${editingProfile.gender === 'boy' ? 'border-blue-400 bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:border-blue-500 dark:text-blue-300' : 'border-slate-100 dark:border-slate-700 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                                <span className="text-lg">👦</span>
+                                <span className="font-bold text-sm">{t('boy')}</span>
+                            </button>
+                            <button onClick={() => setEditingProfile({...editingProfile, gender: 'girl'})} className={`py-3 rounded-xl border-2 flex items-center justify-center gap-2 transition-all ${editingProfile.gender === 'girl' ? 'border-rose-400 bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:border-rose-500 dark:text-rose-300' : 'border-slate-100 dark:border-slate-700 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                                <span className="text-lg">👧</span>
+                                <span className="font-bold text-sm">{t('girl')}</span>
+                            </button>
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="relative">
                                 <label className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 absolute top-2 left-3 z-10 pointer-events-none">{t('child_dob')}</label>

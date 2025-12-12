@@ -86,6 +86,11 @@ export const translations = {
   signing_out: { en: "Signing out...", mm: "အကောင့်ထွက်နေသည်..." },
   account: { en: "Account", mm: "အကောင့်" },
   
+  // Profile Gender
+  gender: { en: "Gender", mm: "ကျား/မ" },
+  boy: { en: "Boy", mm: "သားသား" },
+  girl: { en: "Girl", mm: "မီးမီး" },
+  
   // Manage Data
   manage_growth: { en: "Growth Records", mm: "ကြီးထွားမှုမှတ်တမ်း" },
   growth_input_title: { en: "Add/Edit Record", mm: "မှတ်တမ်း အသစ်/ပြင်ဆင်" },
