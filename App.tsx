@@ -763,41 +763,55 @@ function App() {
           <div className="pb-32 animate-fade-in space-y-6">
              <div className="flex flex-col items-center justify-center pt-4 pb-6"><div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white dark:border-slate-800 shadow-lg mb-3">{activeProfile.profileImage ? (<img src={activeProfile.profileImage} alt="Profile" className="w-full h-full object-cover" />) : (<div className="w-full h-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center"><Baby className="w-10 h-10 text-slate-300 dark:text-slate-600" /></div>)}</div><h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{activeProfile.name || 'New Profile'}</h1><p className="text-slate-400 dark:text-slate-500 text-xs font-medium bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full mt-1">{t('about_child')}</p></div>
              
-             {/* 1. Profile Card with Multi-User Support */}
+            {/* 1. Profile Card with Multi-User Support */}
              <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 relative">
-                {/* Profile List Container with Snap Animation & Margin Adjustment */}
-                <div className="flex items-center gap-5 overflow-x-auto pb-6 mb-4 no-scrollbar snap-x snap-mandatory scroll-smooth px-1">
-                    {/* 1. Active Profile always first */}
-                     
-                   {/* Sort profiles: Named ones first */}
+                {/* Profile List Container */}
+                <div className="flex items-center gap-5 overflow-x-auto py-4 px-2 mb-2 no-scrollbar snap-x snap-mandatory scroll-smooth">
+                   {/* Sort profiles: Active First, then Named ones, then Alphabetical */}
                    {[...profiles].sort((a, b) => {
+                       // 1. Active Profile always first
                        if (a.id === currentProfileId) return -1;
                        if (b.id === currentProfileId) return 1;
-                     
+
+                       // 2. Named profiles first
                        const nameA = a.name ? a.name.trim() : '';
                        const nameB = b.name ? b.name.trim() : '';
-                       // If A has name and B doesn't, A comes first (-1)
                        if (nameA && !nameB) return -1;
-                       // If A doesn't and B does, B comes first (1)
                        if (!nameA && nameB) return 1;
-                       // Otherwise preserve order
-                       return 0;
-                   }).map(p => (
-                       <button key={p.id} onClick={() => selectProfileToEdit(p)} className={`flex flex-col items-center flex-shrink-0 transition-all snap-center ${editingProfile.id === p.id ? 'opacity-100 scale-100' : 'opacity-60 scale-100 hover:opacity-100'}`}>
-                           <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-2 border-2 overflow-hidden shadow-sm ${editingProfile.id === p.id ? 'border-primary bg-rose-50' : 'border-slate-200 bg-slate-50'}`}>
-                               {p.profileImage ? (<img src={p.profileImage} alt={p.name} className="w-full h-full object-cover"/>) : (<Baby className={`w-7 h-7 ${editingProfile.id === p.id ? 'text-primary' : 'text-slate-400'}`} />)}
+                       return nameA.localeCompare(nameB);
+                   }).map(profile => (
+                       <div 
+                           key={profile.id} 
+                           onClick={() => handleProfileSelect(profile.id!)}
+                           className={`snap-center shrink-0 flex flex-col items-center gap-2 cursor-pointer transition-all duration-300 ${currentProfileId === profile.id ? 'scale-110' : 'opacity-60 hover:opacity-100 hover:scale-105'}`}
+                       >
+                           <div className={`w-14 h-14 rounded-full border-2 p-0.5 flex items-center justify-center overflow-hidden transition-all duration-300 ${currentProfileId === profile.id ? 'border-rose-400 shadow-md shadow-rose-200 dark:shadow-rose-900/30' : 'border-transparent'}`}>
+                               <div className="w-full h-full rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center overflow-hidden">
+                                   {profile.profileImage ? (
+                                       <img src={profile.profileImage} alt={profile.name} className="w-full h-full object-cover" />
+                                   ) : (
+                                       <User className="w-6 h-6 text-slate-400" />
+                                   )}
+                               </div>
                            </div>
-                           <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 truncate w-20 text-center">{p.name || 'New'}</span>
-                           {activeProfileId === p.id && <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-1.5 shadow-sm shadow-green-200"></span>}
-                       </button>
-                   ))}
-                   <button onClick={createNewProfile} className="flex flex-col items-center flex-shrink-0 opacity-60 hover:opacity-100 transition-opacity snap-center">
-                       <div className="w-14 h-14 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center mb-2 text-slate-400 bg-slate-50/50">
-                           <UserPlus className="w-6 h-6" />
+                           <span className={`text-[10px] font-bold truncate max-w-[60px] transition-colors ${currentProfileId === profile.id ? 'text-rose-500 dark:text-rose-400' : 'text-slate-600 dark:text-slate-400'}`}>
+                               {profile.name || t('child_name')}
+                           </span>
                        </div>
-                       <span className="text-[10px] font-bold text-slate-500">{t('nav_create')}</span>
+                   ))}
+
+                   {/* Add Profile Button */}
+                   <button 
+                       onClick={handleAddProfile}
+                       className="snap-center shrink-0 flex flex-col items-center gap-2 cursor-pointer opacity-60 hover:opacity-100 hover:scale-105 transition-all"
+                   >
+                       <div className="w-14 h-14 rounded-full bg-slate-50 dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center">
+                           <Plus className="w-5 h-5 text-slate-400" />
+                       </div>
+                       <span className="text-[10px] font-bold text-slate-400">{t('create')}</span>
                    </button>
                 </div>
+             </div>
                 
                 <div className="grid grid-cols-1 gap-4 mt-2">
                   {!isDetailsUnlocked ? (
