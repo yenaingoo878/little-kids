@@ -5,6 +5,9 @@ export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current working directory.
   // Fix: Cast process to any as 'cwd' property might be missing on Process type definition in this context
   const env = loadEnv(mode, (process as any).cwd(), '');
+  ignoreDeadLinks: [
+    // Dead link သည် .env.local ဖြစ်သောကြောင့် ၎င်းကို လျစ်လျူရှုရန် သတ်မှတ်ခြင်း
+    './.env.local'
   
 
   return {
