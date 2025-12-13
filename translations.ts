@@ -36,6 +36,13 @@ export const translations = {
   add_tag_placeholder: { en: "Add tag...", mm: "Tag ရိုက်ထည့်ပါ..." },
   add: { en: "Add", mm: "ထည့်မယ်" },
 
+  // Search & Filter
+  search_placeholder: { en: "Search title or description...", mm: "ခေါင်းစဉ် (သို့) အကြောင်းအရာ ရှာရန်..." },
+  filter_date_start: { en: "From", mm: "မှ" },
+  filter_date_end: { en: "To", mm: "ထိ" },
+  all_tags: { en: "All Tags", mm: "Tag အားလုံး" },
+  filter_options: { en: "Filter Options", mm: "စစ်ထုတ်ရန်" },
+
   // Story Generator
   story_title: { en: "Bedtime Story", mm: "အိပ်ရာဝင် ပုံပြင်" },
   story_subtitle: { en: "Create stories using AI", mm: "AI ကိုအသုံးပြုပြီး ပုံပြင်လေးတွေ ဖန်တီးပါ" },
@@ -64,7 +71,7 @@ export const translations = {
   // Gallery
   gallery_title: { en: "Photo Gallery", mm: "ဓာတ်ပုံပြခန်း" },
   gallery_subtitle: { en: "Precious Moments", mm: "အမှတ်တရ ပုံရိပ်လွှာများ" },
-  no_photos: { en: "No photos yet", mm: "ဓာတ်ပုံများ မရှိသေးပါ" },
+  no_photos: { en: "No photos found", mm: "ဓာတ်ပုံများ မတွေ့ရှိပါ" },
 
   // Settings
   settings_title: { en: "Settings", mm: "ဆက်တင်များ" },
@@ -141,5 +148,10 @@ export const translations = {
 };
 
 export const getTranslation = (lang: Language, key: keyof typeof translations) => {
+  if (!translations[key]) {
+      console.warn(`Missing translation for key: ${key}`);
+      return key || "Missing";
+  }
   return translations[key][lang];
 };
+
