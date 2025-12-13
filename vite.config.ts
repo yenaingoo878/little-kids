@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react()
     ],
-    base: process.env.VITE_BASE_PATH || "/little-kids",
+    base: process.env.VITE_BASE_PATH || "/little-kids/",
     define: {
       // Polyfill process.env.API_KEY so it is available at runtime
       // Support both API_KEY and GEMINI_API_KEY
