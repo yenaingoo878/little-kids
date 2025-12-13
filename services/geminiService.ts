@@ -17,31 +17,41 @@ const getAiClient = () => {
     return ai;
 };
 
+// generateBedtimeStoryStream function အတွက် ပြင်ဆင်ချက်
 export const generateBedtimeStoryStream = async (topic: string, childName: string, language: Language) => {
   try {
     const client = getAiClient();
     const langPrompt = language === 'mm' ? 'Burmese language (Myanmar)' : 'English language';
     
-    const prompt = `
-      Create a short, gentle, and heartwarming bedtime story for a child named "${childName}" in ${langPrompt}.
-      The story should be about: "${topic}".
-      Keep the tone sweet, soothing, and suitable for young children. 
-      Limit the story to about 150-200 words.
-      Do not include markdown formatting or bold text, just plain text paragraphs.
+    // 1. စည်းမျဉ်းများကို System Instruction အဖြစ် သတ်မှတ်ခြင်း (ပိုမိုတိကျစေရန်)
+    const systemInstruction = `
+      You are a warm, gentle, and creative children's storyteller.
+      Your task is to write a short, heartwarming bedtime story.
+      The story must be written in the specified language and addressed to the child.
+      Strictly limit the story length to 150-200 words.
+      The output must ONLY contain the plain story text, with no title, no introduction, no conclusion outside the story, and absolutely no markdown (no bold, no asterisks, no hashtags).
+    `;
+    
+    // 2. ပုံပြင်ရဲ့ အကြောင်းအရာကိုသာ Prompt အဖြစ် ထားရှိခြင်း
+    const userPrompt = `
+      Create a bedtime story for a child named "${childName}" about the topic: "${topic}". 
+      Write the story in ${langPrompt}.
     `;
 
+    // 3. generateContentStream ကို config တွင် systemInstruction ထည့်သွင်း၍ ခေါ်ဆိုခြင်း
     const response = await client.models.generateContentStream({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
+      model: 'gemini-2.5-flash', // Model ကို ဆက်လက်အသုံးပြုမည်
+      contents: userPrompt,
       config: {
         temperature: 0.7,
+        systemInstruction: systemInstruction, // System Instruction အသစ်ကို ထည့်သွင်းခြင်း
       }
     });
 
     return response;
   } catch (error) {
-    console.error("Error generating story:", error);
-    throw error;
+    console.error('Error generating story stream:', error);
+    throw new Error('Failed to generate bedtime story.');
   }
 };
 
