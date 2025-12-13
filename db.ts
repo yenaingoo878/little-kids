@@ -541,6 +541,7 @@
 // };
 
 
+
 import Dexie, { Table } from 'dexie';
 import { Memory, GrowthData, ChildProfile } from './types';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
@@ -561,12 +562,16 @@ db.version(3).stores({
 
 export { db };
 
-// Helper for ID generation
+// Helper for ID generation (Ensures valid UUID format for Postgres)
 export const generateId = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
   }
-  return Date.now().toString() + Math.random().toString(36).substring(2);
+  // Fallback for UUID v4 compliance (Postgres strict uuid type requires this format)
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
 };
 
 // --- Initialization Logic ---
@@ -574,7 +579,7 @@ export const initDB = async () => {
   const profileCount = await db.profile.count();
   if (profileCount === 0) {
       // Create a default profile if none exist
-      const defaultId = generateId(); // Use generated ID instead of hardcoded 'main'
+      const defaultId = generateId(); 
       await db.profile.add({
           id: defaultId,
           name: '',
@@ -603,39 +608,7 @@ export const syncData = async () => {
         // --- 1. PUSH (Local -> Cloud) ---
         // Upload local changes that haven't been synced yet
         
-        // Memories
-        const unsyncedMemories = await db.memories.where('synced').equals(0).toArray();
-        if (unsyncedMemories.length > 0) {
-            console.log(`Pushing ${unsyncedMemories.length} memories...`);
-            const { error } = await supabase.from('memories').upsert(
-                unsyncedMemories.map(m => {
-                    const { synced, ...rest } = m;
-                    return rest;
-                })
-            );
-            if (error) console.error("Error pushing memories:", error);
-            else {
-                await db.memories.bulkPut(unsyncedMemories.map(m => ({ ...m, synced: 1 })));
-            }
-        }
-
-        // Growth
-        const unsyncedGrowth = await db.growth.where('synced').equals(0).toArray();
-        if (unsyncedGrowth.length > 0) {
-            console.log(`Pushing ${unsyncedGrowth.length} growth records...`);
-            const { error } = await supabase.from('growth_data').upsert(
-                unsyncedGrowth.map(g => {
-                    const { synced, ...rest } = g;
-                    return rest;
-                })
-            );
-            if (error) console.error("Error pushing growth:", error);
-            else {
-                await db.growth.bulkPut(unsyncedGrowth.map(g => ({ ...g, synced: 1 })));
-            }
-        }
-
-        // Profile
+        // PRIORITY 1: Profile (Must be synced FIRST because other tables reference it via Foreign Key)
         const unsyncedProfile = await db.profile.where('synced').equals(0).toArray();
         // Only push profiles that actually have a name (ignore the default empty one created by initDB)
         const validProfilesToPush = unsyncedProfile.filter(p => p.name && p.name.trim() !== '');
@@ -651,6 +624,38 @@ export const syncData = async () => {
             if (error) console.error("Error pushing profiles:", error);
             else {
                 await db.profile.bulkPut(validProfilesToPush.map(p => ({ ...p, synced: 1 })));
+            }
+        }
+        
+        // PRIORITY 2: Memories
+        const unsyncedMemories = await db.memories.where('synced').equals(0).toArray();
+        if (unsyncedMemories.length > 0) {
+            console.log(`Pushing ${unsyncedMemories.length} memories...`);
+            const { error } = await supabase.from('memories').upsert(
+                unsyncedMemories.map(m => {
+                    const { synced, ...rest } = m;
+                    return rest;
+                })
+            );
+            if (error) console.error("Error pushing memories:", error);
+            else {
+                await db.memories.bulkPut(unsyncedMemories.map(m => ({ ...m, synced: 1 })));
+            }
+        }
+
+        // PRIORITY 3: Growth Data
+        const unsyncedGrowth = await db.growth.where('synced').equals(0).toArray();
+        if (unsyncedGrowth.length > 0) {
+            console.log(`Pushing ${unsyncedGrowth.length} growth records...`);
+            const { error } = await supabase.from('growth_data').upsert(
+                unsyncedGrowth.map(g => {
+                    const { synced, ...rest } = g;
+                    return rest;
+                })
+            );
+            if (error) console.error("Error pushing growth:", error);
+            else {
+                await db.growth.bulkPut(unsyncedGrowth.map(g => ({ ...g, synced: 1 })));
             }
         }
 
