@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Home, PlusCircle, BookOpen, Activity, Camera, Image as ImageIcon, Baby, ChevronRight, Sparkles, Plus, Moon, Sun, Pencil, X, Settings, Trash2, ArrowLeft, Ruler, Scale, Calendar, Lock, Unlock, ShieldCheck, KeyRound, Cloud, CloudOff, RefreshCw, AlertTriangle, Save, UserPlus, LogOut, User, Loader2, Check, Tag } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Home, PlusCircle, BookOpen, Activity, Camera, Image as ImageIcon, Baby, ChevronRight, Sparkles, Plus, Moon, Sun, Pencil, X, Settings, Trash2, ArrowLeft, Ruler, Scale, Calendar, Lock, Unlock, ShieldCheck, KeyRound, Cloud, CloudOff, RefreshCw, AlertTriangle, Save, UserPlus, LogOut, User, Loader2, Check, Tag, Search, Filter } from 'lucide-react';
 import { MemoryCard } from './components/MemoryCard';
 import { GrowthChart } from './components/GrowthChart';
 import { StoryGenerator } from './components/StoryGenerator';
@@ -59,6 +59,13 @@ function App() {
   // State for new growth record input
   const [newGrowth, setNewGrowth] = useState<Partial<GrowthData>>({ month: undefined, height: undefined, weight: undefined });
   const [isEditingGrowth, setIsEditingGrowth] = useState(false);
+  
+  // State for Settings Filter (Manage Memories)
+  const [settingsSearchQuery, setSettingsSearchQuery] = useState('');
+  const [settingsStartDate, setSettingsStartDate] = useState('');
+  const [settingsEndDate, setSettingsEndDate] = useState('');
+  const [settingsSelectedTag, setSettingsSelectedTag] = useState('');
+  const [settingsShowFilters, setSettingsShowFilters] = useState(false);
 
   // Persistence for Language 
   const [language, setLanguage] = useState<Language>(() => {
@@ -99,6 +106,33 @@ function App() {
 
   // Computed Active Profile
   const activeProfile = profiles.find(p => p.id === activeProfileId) || { id: '', name: '', dob: '', gender: 'boy' } as ChildProfile;
+
+  // Computed Filtered Memories for Settings
+  const filteredSettingsMemories = useMemo(() => {
+    return memories.filter(memory => {
+        // 1. Text Search
+        const query = settingsSearchQuery.toLowerCase();
+        const matchesText = (memory.title?.toLowerCase().includes(query) || 
+                             memory.description?.toLowerCase().includes(query));
+
+        // 2. Date Range
+        const matchesStart = settingsStartDate ? memory.date >= settingsStartDate : true;
+        const matchesEnd = settingsEndDate ? memory.date <= settingsEndDate : true;
+
+        // 3. Tag
+        const matchesTag = settingsSelectedTag ? memory.tags?.includes(settingsSelectedTag) : true;
+
+        return matchesText && matchesStart && matchesEnd && matchesTag;
+    });
+  }, [memories, settingsSearchQuery, settingsStartDate, settingsEndDate, settingsSelectedTag]);
+  
+  const allSettingsTags = useMemo(() => {
+      const tags = new Set<string>();
+      memories.forEach(m => {
+          if(m.tags) m.tags.forEach(t => tags.add(t));
+      });
+      return Array.from(tags);
+  }, [memories]);
 
   // --- Toast Handler ---
   useEffect(() => {
@@ -376,47 +410,61 @@ function App() {
     setNewMemory(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tagToRemove) }));
   };
 
-  const handleSaveMemory = async () => { 
-      if (!newMemory.title || !activeProfileId) return; 
-      setIsSaving(true);
-      try {
-        const finalImageUrl = newMemory.imageUrl || `https://picsum.photos/400/300?random=${Date.now()}`; 
-        if (editingId) { 
-            const existing = memories.find(m => m.id === editingId); 
-            if (existing) { 
-                const updated: Memory = { ...existing, childId: existing.childId, title: newMemory.title, description: newMemory.desc, imageUrl: finalImageUrl, date: newMemory.date, tags: newMemory.tags }; 
-                await DataService.addMemory(updated); 
-            } 
-        } else { 
-            const memory: Memory = { id: generateId(), childId: activeProfileId, title: newMemory.title, description: newMemory.desc, date: newMemory.date, imageUrl: finalImageUrl, tags: newMemory.tags.length > 0 ? newMemory.tags : ['New Memory'], synced: 0 }; 
-            await DataService.addMemory(memory); 
-        } 
-        await loadChildData(activeProfileId); 
-        setNewMemory({ title: '', desc: '', date: getTodayLocal(), tags: [] }); 
-        setEditingId(null); 
-        setActiveTab(TabView.HOME);
+  const handleSaveMemory = async () => {
+    if (!newMemory.title.trim()) return;
+    setIsSaving(true);
+    try {
+        const memoryToSave: Memory = {
+            id: editingId || generateId(),
+            childId: activeProfileId,
+            title: newMemory.title,
+            date: newMemory.date || getTodayLocal(),
+            description: newMemory.desc,
+            imageUrl: newMemory.imageUrl || 'https://via.placeholder.com/400x300?text=No+Image',
+            tags: newMemory.tags,
+            synced: 0
+        };
+        await DataService.addMemory(memoryToSave);
+        await refreshData();
         triggerToast(t('saved_success'));
-      } finally {
+        handleCancelEdit();
+    } catch (error) {
+        console.error("Error saving memory:", error);
+        triggerToast("Failed to save memory", 'error');
+    } finally {
         setIsSaving(false);
-      }
+    }
   };
 
-  const handleAddGrowthRecord = async () => { 
-      if (newGrowth.month !== undefined && newGrowth.height && newGrowth.weight && activeProfileId) { 
-        setIsSaving(true);
-        try {
-          let updatedData: GrowthData = { id: newGrowth.id || generateId(), childId: activeProfileId, month: Number(newGrowth.month), height: Number(newGrowth.height), weight: Number(newGrowth.weight), synced: 0 }; 
-          await DataService.saveGrowth(updatedData); 
-          await loadChildData(activeProfileId); 
-          setNewGrowth({ month: undefined, height: undefined, weight: undefined }); 
-          setIsEditingGrowth(false);
-          triggerToast(t('saved_success'));
-        } finally {
-          setIsSaving(false);
-        }
-      } 
+  const handleAddGrowthRecord = async () => {
+     if (!newGrowth.month || !newGrowth.height || !newGrowth.weight) return;
+     setIsSaving(true);
+     try {
+         const record: GrowthData = {
+             id: newGrowth.id || generateId(),
+             childId: activeProfileId,
+             month: newGrowth.month,
+             height: newGrowth.height,
+             weight: newGrowth.weight,
+             synced: 0
+         };
+         await DataService.saveGrowth(record);
+         await refreshData();
+         setNewGrowth({ month: undefined, height: undefined, weight: undefined });
+         setIsEditingGrowth(false);
+         triggerToast(t('saved_success'));
+     } catch (e) {
+         console.error(e);
+         triggerToast("Failed to save growth record", 'error');
+     } finally {
+         setIsSaving(false);
+     }
   };
-  const handleEditGrowthRecord = (data: GrowthData) => { setNewGrowth(data); setIsEditingGrowth(true); };
+
+  const handleEditGrowthRecord = (data: GrowthData) => {
+      setNewGrowth({ id: data.id, month: data.month, height: data.height, weight: data.weight });
+      setIsEditingGrowth(true);
+  };
 
   // --- RENDER ---
   
@@ -637,15 +685,53 @@ function App() {
                         <p className="text-slate-500 dark:text-slate-400 text-xs">{t('settings_subtitle')}</p>
                     </div>
                  </div>
+
+                 {/* Settings Filters */}
+                 <div className="bg-white dark:bg-slate-800 p-4 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 mb-4">
+                      <div className="flex gap-2 mb-3">
+                          <div className="relative flex-1">
+                              <input 
+                                type="text" 
+                                value={settingsSearchQuery}
+                                onChange={(e) => setSettingsSearchQuery(e.target.value)}
+                                placeholder={t('search_placeholder')}
+                                className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-200 outline-none"
+                              />
+                              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                          </div>
+                          <button 
+                             onClick={() => setSettingsShowFilters(!settingsShowFilters)}
+                             className={`p-2.5 rounded-xl transition-colors ${settingsShowFilters ? 'bg-indigo-50 text-indigo-500 dark:bg-indigo-900/30' : 'bg-slate-50 text-slate-500 dark:bg-slate-700/50'}`}
+                          >
+                              <Filter className="w-4 h-4" />
+                          </button>
+                      </div>
+                      
+                      {settingsShowFilters && (
+                          <div className="grid grid-cols-2 gap-3 animate-zoom-in pt-1">
+                              <div>
+                                  <label className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 mb-1">{t('filter_date_start')}</label>
+                                  <input type="date" value={settingsStartDate} onChange={(e) => setSettingsStartDate(e.target.value)} className="w-full px-2 py-2 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none"/>
+                              </div>
+                              <div>
+                                  <label className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 mb-1">{t('tags_label')}</label>
+                                  <select value={settingsSelectedTag} onChange={(e) => setSettingsSelectedTag(e.target.value)} className="w-full px-2 py-2 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none">
+                                      <option value="">{t('all_tags')}</option>
+                                      {allSettingsTags.map(tag => (<option key={tag} value={tag}>{tag}</option>))}
+                                  </select>
+                              </div>
+                          </div>
+                      )}
+                 </div>
                  
                  <div className="space-y-3">
-                    {memories.length === 0 ? (
+                    {filteredSettingsMemories.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-10 text-slate-400 dark:text-slate-500">
                             <ImageIcon className="w-10 h-10 mb-2 opacity-50" />
                             <p>{t('no_photos')}</p>
                         </div>
                     ) : (
-                        memories.map((mem) => (
+                        filteredSettingsMemories.map((mem) => (
                             <div key={mem.id} className="flex justify-between items-center p-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
                                 <div className="flex items-center gap-4 overflow-hidden">
                                     <img src={mem.imageUrl} alt={mem.title} className="w-12 h-12 rounded-xl object-cover shrink-0 bg-slate-100 dark:bg-slate-700" />
@@ -677,10 +763,35 @@ function App() {
              
              {/* 1. Profile Card with Multi-User Support */}
              <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 relative">
-                <div className="flex items-center gap-3 overflow-x-auto pb-4 mb-2 no-scrollbar">
-                   {profiles.map(p => (<button key={p.id} onClick={() => selectProfileToEdit(p)} className={`flex flex-col items-center flex-shrink-0 transition-all ${editingProfile.id === p.id ? 'opacity-100 scale-105' : 'opacity-60 scale-100 hover:opacity-100'}`}><div className={`w-12 h-12 rounded-full flex items-center justify-center mb-1 border-2 overflow-hidden ${editingProfile.id === p.id ? 'border-primary bg-rose-50' : 'border-slate-200 bg-slate-50'}`}>{p.profileImage ? (<img src={p.profileImage} alt={p.name} className="w-full h-full object-cover"/>) : (<Baby className={`w-6 h-6 ${editingProfile.id === p.id ? 'text-primary' : 'text-slate-400'}`} />)}</div><span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 truncate w-16 text-center">{p.name || 'New'}</span>{activeProfileId === p.id && <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-1"></span>}</button>))}
-                   <button onClick={createNewProfile} className="flex flex-col items-center flex-shrink-0 opacity-60 hover:opacity-100 transition-opacity"><div className="w-12 h-12 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center mb-1 text-slate-400 bg-slate-50/50"><UserPlus className="w-5 h-5" /></div><span className="text-[10px] font-bold text-slate-500">{t('nav_create')}</span></button>
+                {/* Profile List Container with Snap Animation & Margin Adjustment */}
+                <div className="flex items-center gap-5 overflow-x-auto pb-6 mb-4 no-scrollbar snap-x snap-mandatory scroll-smooth px-1">
+                   {/* Sort profiles: Named ones first */}
+                   {[...profiles].sort((a, b) => {
+                       const nameA = a.name ? a.name.trim() : '';
+                       const nameB = b.name ? b.name.trim() : '';
+                       // If A has name and B doesn't, A comes first (-1)
+                       if (nameA && !nameB) return -1;
+                       // If A doesn't and B does, B comes first (1)
+                       if (!nameA && nameB) return 1;
+                       // Otherwise preserve order
+                       return 0;
+                   }).map(p => (
+                       <button key={p.id} onClick={() => selectProfileToEdit(p)} className={`flex flex-col items-center flex-shrink-0 transition-all snap-center ${editingProfile.id === p.id ? 'opacity-100 scale-100' : 'opacity-60 scale-100 hover:opacity-100'}`}>
+                           <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-2 border-2 overflow-hidden shadow-sm ${editingProfile.id === p.id ? 'border-primary bg-rose-50' : 'border-slate-200 bg-slate-50'}`}>
+                               {p.profileImage ? (<img src={p.profileImage} alt={p.name} className="w-full h-full object-cover"/>) : (<Baby className={`w-7 h-7 ${editingProfile.id === p.id ? 'text-primary' : 'text-slate-400'}`} />)}
+                           </div>
+                           <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 truncate w-20 text-center">{p.name || 'New'}</span>
+                           {activeProfileId === p.id && <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-1.5 shadow-sm shadow-green-200"></span>}
+                       </button>
+                   ))}
+                   <button onClick={createNewProfile} className="flex flex-col items-center flex-shrink-0 opacity-60 hover:opacity-100 transition-opacity snap-center">
+                       <div className="w-14 h-14 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center mb-2 text-slate-400 bg-slate-50/50">
+                           <UserPlus className="w-6 h-6" />
+                       </div>
+                       <span className="text-[10px] font-bold text-slate-500">{t('nav_create')}</span>
+                   </button>
                 </div>
+                
                 <div className="grid grid-cols-1 gap-4 mt-2">
                   {!isDetailsUnlocked ? (
                     <button onClick={handleUnlockClick} className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/30 rounded-2xl border border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-all group"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center text-slate-500 dark:text-slate-300 group-hover:bg-primary group-hover:text-white transition-colors"><Lock className="w-5 h-5" /></div><div className="text-left"><p className="text-sm font-bold text-slate-700 dark:text-slate-200">{t('private_info')}</p><p className="text-[10px] text-slate-400 dark:text-slate-500">{t('tap_to_unlock')}</p></div></div><ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-slate-400 transition-colors" /></button>
@@ -811,7 +922,7 @@ function App() {
   return (
     <div className="min-h-screen bg-[#F2F2F7] dark:bg-slate-900 w-full md:max-w-3xl lg:max-w-5xl mx-auto relative shadow-2xl md:my-8 md:min-h-[calc(100vh-4rem)] md:rounded-[48px] overflow-hidden font-sans transition-colors duration-300">
       {/* Top Decoration */}
-      <div className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-secondary to-accent z-50 max-w-md mx-auto" />
+      {/* <div className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-secondary to-accent z-50 max-w-md mx-auto" /> */}
 
       {/* Main Content Area */}
       <main className="px-5 pt-8 min-h-screen box-border">
@@ -881,3 +992,4 @@ function App() {
 }
 
 export default App;
+
