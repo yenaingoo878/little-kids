@@ -755,6 +755,8 @@ function App() {
               </div>
            );
         }
+
+        const currentProfile = profiles.find(p => p.id === currentProfileId);
         
         // MAIN SETTINGS VIEW (Add Logout Button here)
         return (
@@ -765,8 +767,13 @@ function App() {
              <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 relative">
                 {/* Profile List Container with Snap Animation & Margin Adjustment */}
                 <div className="flex items-center gap-5 overflow-x-auto pb-6 mb-4 no-scrollbar snap-x snap-mandatory scroll-smooth px-1">
+                    {/* 1. Active Profile always first */}
+                     
                    {/* Sort profiles: Named ones first */}
                    {[...profiles].sort((a, b) => {
+                       if (a.id === currentProfileId) return -1;
+                       if (b.id === currentProfileId) return 1;
+                     
                        const nameA = a.name ? a.name.trim() : '';
                        const nameB = b.name ? b.name.trim() : '';
                        // If A has name and B doesn't, A comes first (-1)
