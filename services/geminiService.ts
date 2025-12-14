@@ -94,22 +94,15 @@ export const analyzeGrowthData = async (
 ): Promise<string> => {
     try {
         const client = getAiClient();
+        // ဘာသာစကား သတ်မှတ်ခြင်း (မြန်မာ သို့မဟုတ် အင်္ဂလိပ်)
         const langPrompt = language === 'mm' ? 'Burmese language (Myanmar)' : 'English language';
         const dataStr = data.map(d => `Month: ${d.month}, Height: ${d.height}cm, Weight: ${d.weight}kg`).join('\n');
         
-        // နှိုင်းယှဉ်ချက်အတွက် နောက်ခံအကြောင်းအရာ (Context)
         const genderText = childGender === 'male' ? 'boy' : 'girl';
 
-        // Prompt ကို HK Growth Study ဖြင့် တိုက်ရိုက် အစားထိုး ညွှန်ကြားခြင်း
         const growthStandardPrompt = `
             The analysis must be done by comparing the child's data against **Hong Kong Growth Study (HK2020) standards** for Asian children. 
-            
             Focus on assessing the trend compared to the expected growth curve for a Hong Kong / Asian ${genderText} child of ${childAgeMonths} months. 
-            
-            Key analysis points: 
-            1. Is the Height and Weight gain consistent over the months according to HK2020 charts? 
-            2. Does the child's overall growth trajectory look stable and typical based on these recognized local Asian standards?
-            
             Strictly do not give specific medical advice.
         `;
 
@@ -124,8 +117,11 @@ export const analyzeGrowthData = async (
 
             ${growthStandardPrompt}
             
-            Provide a very short, encouraging summary (max 2-3 sentences) in ${langPrompt} for the parent. 
-            Highlight the stability of the growth and provide a mild, positive comparison to the expected HK2020 growth trend. 
+            **Output MUST be extremely brief (max 2 sentences total) and formatted with a clear title in ${langPrompt}.**
+            
+            **Use this format (Title on the first line, one sentence summary on the second line) in the requested language.**
+            
+            Do not include any introductory phrases like "Here is the summary" or "Based on the data".
         `;
 
         const response = await client.models.generateContent({
