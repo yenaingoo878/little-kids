@@ -55,18 +55,77 @@ export const generateBedtimeStoryStream = async (topic: string, childName: strin
   }
 };
 
-export const analyzeGrowthData = async (data: GrowthData[], language: Language): Promise<string> => {
+// export const analyzeGrowthData = async (data: GrowthData[], language: Language): Promise<string> => {
+//     try {
+//         const client = getAiClient();
+//         const langPrompt = language === 'mm' ? 'Burmese language (Myanmar)' : 'English language';
+//         const dataStr = data.map(d => `Month: ${d.month}, Height: ${d.height}cm, Weight: ${d.weight}kg`).join('\n');
+        
+//         const prompt = `
+//           Act as a friendly pediatrician assistant. Analyze this growth data for a child:
+//           ${dataStr}
+          
+//           Provide a very short, encouraging summary (max 2-3 sentences) in ${langPrompt} for the parent. 
+//           Focus on the steady progress. Do not give medical advice, just general encouragement about their growth trend.
+//         `;
+
+//         const response = await client.models.generateContent({
+//             model: 'gemini-2.5-flash',
+//             contents: prompt,
+//             config: {
+//                 temperature: 0.5,
+//             }
+//         });
+
+//         return response.text || (language === 'mm' ? "အချက်အလက်များကို ဆန်းစစ်မရနိုင်ပါ။" : "Could not analyze data.");
+//     } catch (error) {
+//         console.error("Error analyzing growth:", error);
+//         return language === 'mm' 
+//             ? "ကွန်ဟက်ချိတ်ဆက်မှု အခက်အခဲရှိနေပါသည်။" 
+//             : "Connection error. Please try again.";
+//     }
+// }
+
+export const analyzeGrowthData = async (
+    data: GrowthData[],
+    language: Language,
+    childAgeMonths: number,
+    childGender: 'male' | 'female'
+): Promise<string> => {
     try {
         const client = getAiClient();
         const langPrompt = language === 'mm' ? 'Burmese language (Myanmar)' : 'English language';
         const dataStr = data.map(d => `Month: ${d.month}, Height: ${d.height}cm, Weight: ${d.weight}kg`).join('\n');
         
+        // နှိုင်းယှဉ်ချက်အတွက် နောက်ခံအကြောင်းအရာ (Context)
+        const genderText = childGender === 'male' ? 'boy' : 'girl';
+
+        // Prompt ကို HK Growth Study ဖြင့် တိုက်ရိုက် အစားထိုး ညွှန်ကြားခြင်း
+        const growthStandardPrompt = `
+            The analysis must be done by comparing the child's data against **Hong Kong Growth Study (HK2020) standards** for Asian children. 
+            
+            Focus on assessing the trend compared to the expected growth curve for a Hong Kong / Asian ${genderText} child of ${childAgeMonths} months. 
+            
+            Key analysis points: 
+            1. Is the Height and Weight gain consistent over the months according to HK2020 charts? 
+            2. Does the child's overall growth trajectory look stable and typical based on these recognized local Asian standards?
+            
+            Strictly do not give specific medical advice.
+        `;
+
         const prompt = `
-          Act as a friendly pediatrician assistant. Analyze this growth data for a child:
-          ${dataStr}
-          
-          Provide a very short, encouraging summary (max 2-3 sentences) in ${langPrompt} for the parent. 
-          Focus on the steady progress. Do not give medical advice, just general encouragement about their growth trend.
+            Act as a friendly pediatrician assistant. Analyze the child's growth data:
+            
+            --- CHILD DATA ---
+            Age: ${childAgeMonths} months, Gender: ${childGender}
+            Growth History:
+            ${dataStr}
+            --- END OF DATA ---
+
+            ${growthStandardPrompt}
+            
+            Provide a very short, encouraging summary (max 2-3 sentences) in ${langPrompt} for the parent. 
+            Highlight the stability of the growth and provide a mild, positive comparison to the expected HK2020 growth trend. 
         `;
 
         const response = await client.models.generateContent({
@@ -76,12 +135,12 @@ export const analyzeGrowthData = async (data: GrowthData[], language: Language):
                 temperature: 0.5,
             }
         });
-
-        return response.text || (language === 'mm' ? "အချက်အလက်များကို ဆန်းစစ်မရနိုင်ပါ။" : "Could not analyze data.");
+        
+        return response.text;
     } catch (error) {
-        console.error("Error analyzing growth:", error);
+        console.error("AI Growth Analysis Error:", error);
         return language === 'mm' 
-            ? "ကွန်ဟက်ချိတ်ဆက်မှု အခက်အခဲရှိနေပါသည်။" 
-            : "Connection error. Please try again.";
+            ? "ခွဲခြမ်းစိတ်ဖြာမှုတွင် အမှားဖြစ်ပွားပါသည်။ ကျေးဇူးပြု၍ ခဏကြာမှ ပြန်လည်ကြိုးစားပါ။"
+            : "An error occurred during analysis. Please try again later.";
     }
-}
+};
