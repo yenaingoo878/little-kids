@@ -995,7 +995,7 @@
 
 //V2 
 
-// import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Home, PlusCircle, BookOpen, Activity, Camera, Image as ImageIcon, Baby, ChevronRight, Sparkles, Plus, Moon, Sun, Pencil, X, Settings, Trash2, ArrowLeft, Ruler, Scale, Calendar, Lock, Unlock, ShieldCheck, KeyRound, Cloud, CloudOff, RefreshCw, AlertTriangle, Save, UserPlus, LogOut, User, Loader2, Check, Tag, Search, Filter } from 'lucide-react';
 import { MemoryCard } from './components/MemoryCard';
 import { GrowthChart } from './components/GrowthChart';
