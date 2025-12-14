@@ -144,3 +144,50 @@ export const analyzeGrowthData = async (
             : "An error occurred during analysis. Please try again later.";
     }
 };
+
+export const generateGuidance = async (
+    data: GrowthData[],
+    language: Language,
+    childAgeMonths: number,
+    childGender: 'male' | 'female',
+    analysisSummary: string // ယခင် AI ခေါ်ဆိုမှုမှ ရရှိသော အနှစ်ချုပ် (Title + Summary Sentence)
+): Promise<string> => {
+    try {
+        const client = getAiClient();
+        const langPrompt = language === 'mm' ? 'Burmese language (Myanmar)' : 'English language';
+        const dataStr = data.map(d => `Month: ${d.month}, Height: ${d.height}cm, Weight: ${d.weight}kg`).join('\n');
+        
+        const prompt = `
+            Act as a supportive, non-medical health assistant. Based on the following growth data and analysis:
+            
+            --- CHILD DATA ---
+            Age: ${childAgeMonths} months, Gender: ${childGender}
+            Growth History:
+            ${dataStr}
+            --- END OF DATA ---
+
+            Previous Growth Analysis Summary: ${analysisSummary}
+
+            Provide a very short, actionable list of **"Next Steps" or "Recommendations"** for the parent in ${langPrompt}. 
+            The recommendations MUST be non-medical, focusing ONLY on healthy lifestyle habits, documentation, and when to seek professional medical advice.
+            
+            Output Format: A numbered list (1., 2., 3., ...) of no more than 3 to 4 points. 
+            Do not include any title or introductory text.
+        `;
+
+        const response = await client.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                temperature: 0.5,
+            }
+        });
+        
+        return response.text;
+    } catch (error) {
+        console.error("AI Guidance Generation Error:", error);
+        return language === 'mm' 
+            ? "နောက်ထပ်လုပ်ဆောင်ရန် လမ်းညွှန်ချက်များကို ထုတ်လုပ်ရာတွင် အမှားဖြစ်ပွားပါသည်။"
+            : "An error occurred while generating guidance.";
+    }
+};
