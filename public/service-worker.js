@@ -5,7 +5,7 @@ const URLS_TO_CACHE = [
   '/index.html',
   '/manifest.json',
   '/icon.png',
-  'https://cdn.tailwindcss.com',
+  './dist/output.css',
   'https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&display=swap'
 ];
 

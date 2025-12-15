@@ -11,6 +11,7 @@ import { Memory, TabView, Language, Theme, ChildProfile, GrowthData } from './ty
 import { getTranslation } from './translations';
 import { initDB, DataService, syncData, generateId } from './db';
 import { supabase } from './supabaseClient'; // Import supabase
+import { AddMemory } from './components/AddMemory';
 
 function App() {
   // Authentication State
@@ -574,6 +575,7 @@ function App() {
       case TabView.ADD_MEMORY:
         // Updated ADD_MEMORY with better alignment, sizing and Tags
         return (
+
           <div className="pb-32 animate-fade-in">
             <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 transition-colors">{editingId ? t('edit_memory_title') : t('add_memory_title')}</h2>{editingId && (<button onClick={handleCancelEdit} className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 font-medium">{t('cancel_btn')}</button>)}</div>
             <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 transition-colors">
@@ -636,6 +638,10 @@ function App() {
               </div>
             </div>
           </div>
+          // <div className="pb-32">
+          //    <div className="mb-6"><h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 transition-colors">{t('story_title')}</h1><p className="text-slate-500 dark:text-slate-400 text-sm transition-colors">{t('story_subtitle')}</p></div>
+          //   <AddMemory language={language} />
+          // </div>
         );
 
       case TabView.STORY:
