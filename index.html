@@ -20,7 +20,6 @@
     <link rel="icon" type="image/png" href="/icon.png" />
     <link rel="apple-touch-icon" href="/icon.png" />
     
-    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&display=swap" rel="stylesheet">
     <script>
       // Polyfill for process.env in browser environments to prevent crashes
@@ -29,7 +28,7 @@
       // Register Service Worker for PWA functionality
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./service-worker.js')
+          navigator.serviceWorker.register('/service-worker.js')
             .then((registration) => {
               console.log('ServiceWorker registration successful with scope: ', registration.scope);
             })
@@ -39,45 +38,45 @@
         });
       }
 
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Padauk', 'sans-serif'],
-            },
-            colors: {
-              primary: '#FF9AA2', // Soft Rose
-              secondary: '#B5EAD7', // Soft Mint
-              accent: '#C7CEEA', // Soft Periwinkle
-              textDark: '#4A5568',
-            },
-            transitionTimingFunction: {
-              'gooey': 'cubic-bezier(0.4, 0, 0.2, 1)',
-              'spring': 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-            },
-            animation: {
-              'fade-in': 'fadeIn 0.5s ease-out',
-              'zoom-in': 'zoomIn 0.3s ease-out',
-              'slide-up': 'slideUp 0.4s ease-out',
-            },
-            keyframes: {
-              fadeIn: {
-                '0%': { opacity: '0' },
-                '100%': { opacity: '1' },
-              },
-              zoomIn: {
-                '0%': { opacity: '0', transform: 'scale(0.95)' },
-                '100%': { opacity: '1', transform: 'scale(1)' },
-              },
-              slideUp: {
-                '0%': { opacity: '0', transform: 'translateY(20px)' },
-                '100%': { opacity: '1', transform: 'translateY(0)' },
-              }
-            }
-          },
-        },
-      }
+      // tailwind.config = {
+      //   darkMode: 'class',
+      //   theme: {
+      //     extend: {
+      //       fontFamily: {
+      //         sans: ['Padauk', 'sans-serif'],
+      //       },
+      //       colors: {
+      //         primary: '#FF9AA2', // Soft Rose
+      //         secondary: '#B5EAD7', // Soft Mint
+      //         accent: '#C7CEEA', // Soft Periwinkle
+      //         textDark: '#4A5568',
+      //       },
+      //       transitionTimingFunction: {
+      //         'gooey': 'cubic-bezier(0.4, 0, 0.2, 1)',
+      //         'spring': 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+      //       },
+      //       animation: {
+      //         'fade-in': 'fadeIn 0.5s ease-out',
+      //         'zoom-in': 'zoomIn 0.3s ease-out',
+      //         'slide-up': 'slideUp 0.4s ease-out',
+      //       },
+      //       keyframes: {
+      //         fadeIn: {
+      //           '0%': { opacity: '0' },
+      //           '100%': { opacity: '1' },
+      //         },
+      //         zoomIn: {
+      //           '0%': { opacity: '0', transform: 'scale(0.95)' },
+      //           '100%': { opacity: '1', transform: 'scale(1)' },
+      //         },
+      //         slideUp: {
+      //           '0%': { opacity: '0', transform: 'translateY(20px)' },
+      //           '100%': { opacity: '1', transform: 'translateY(0)' },
+      //         }
+      //       }
+      //     },
+      //   },
+      // }
     </script>
 <script type="importmap">
 {
@@ -95,11 +94,10 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
+
 </head>
   <body oncontextmenu="return false;">
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
-  <script type="module" src="/index.tsx"></script>
 </body>
 </html>
